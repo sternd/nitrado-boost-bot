@@ -191,7 +191,7 @@ def handler(event, context):
     embed = addGameserverBoostHistoryToEmbed(embed, boost_history_all_accounts)
 
     embed.__setattr__('timestamp', datetime.utcnow())
-    embed.__setattr__('colour', discord.Color('0x4A90E2'))
+    embed.__setattr__('colour', discord.Color(0x4A90E2))
 
     dict_embed = embed.to_dict()
 
@@ -214,18 +214,24 @@ def parseBoostHistory(boost_history):
     if boost_history['status'] != 'success':
         return None
 
-    if not boost_history['boosts']:
+    if not boost_history['data']:
         return None
 
-    return boost_history['boosts']
+    if not boost_history['data']['boosts']:
+        return None
+
+    return boost_history['data']['boosts']
 
 
 def addGameserverBoostHistoryToEmbed(embed, boost_history_all_accounts):
     for gameserver_boost in boost_history_all_accounts:
         formatted_message = ""
 
-        for boost in gameserver_boost:
-            formatted_datetime = datetime.strptime(boost['boosted_at'], '%Y-%m-%dT%H:%M:%S')
+        if not gameserver_boost['boosts']:
+            continue
+
+        for boost in gameserver_boost['boosts']:
+            formatted_datetime = datetime.strptime(boost['boosted_at'], "%Y-%m-%dT%H:%M:%S")
             date = formatted_datetime.date()
 
             day_in_seconds = 86400
@@ -235,14 +241,18 @@ def addGameserverBoostHistoryToEmbed(embed, boost_history_all_accounts):
             if days_boosted >= 2:
                 day_text = 'days'
 
-            formatted_message += '**' + boost['username'] + '**\n' + f'Date: {date}\n' + f'Boost: {days_boosted} {day_text}\n\n'
+            formatted_message += '__**' + boost['username'] + '**__\n' + f'*Date:* {date}\n' + f'*Boost:* {days_boosted} {day_text}\n'
 
-        embed.add_field(name='__**' + gameserver_boost['gameserver_name'] + '**__', value=formatted_message,
+            if boost['message']:
+                boost_message = boost['message']
+                formatted_message += f'Message: {boost_message}\n\n'
+            else:
+                formatted_message += f'Message: None\n\n'
+
+        embed.add_field(name='--- **' + gameserver_boost['gameserver_name'] + '** ---', value=formatted_message,
                         inline=False)
 
     return embed
-
-
 
 
 # FOR TESTING
