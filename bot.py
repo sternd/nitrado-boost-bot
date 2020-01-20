@@ -11,8 +11,9 @@ import boto3
 
 load_dotenv()
 
-BOOST_TABLE_NAME = 'gameserver-boosts'
+BOOST_TABLE_NAME = os.getenv('GAMESERVER_BOOST_TABLE_NAME')
 DB_REGION = 'us-west-2'
+
 
 # Helper class to send Discord API requests
 class DiscordHelper:
@@ -208,6 +209,9 @@ def handler(event, context):
     with open('nitrapi_account_config.json') as json_file:
         nitrapi_account_config = json.load(json_file)
 
+    with open('gameserver_colors.json') as json_file:
+        gameserver_colors = json.load(json_file)
+
     nitrapi_config = json.loads(nitrapi_account_config)
 
     boost_history_all_accounts = []
@@ -216,7 +220,7 @@ def handler(event, context):
         auth_token = account["auth_token"]
 
         for gameserver in account["gameservers"]:
-            if gameserver["enabled"] != True:
+            if not gameserver["enabled"]:
                 continue
 
             gameserver_name = gameserver["gameserver_name"]
@@ -255,7 +259,7 @@ def handler(event, context):
 
         new_db_boosts = []
         for boost in new_gameserver_boosts:
-            embed = generateEmbed(gameserver_name, boost)
+            embed = generateEmbed(gameserver_name, boost, gameserver_colors)
             dict_embed = embed.to_dict()
 
             response = discord_helper.createMessage(dict_embed)
@@ -275,10 +279,10 @@ def handler(event, context):
                 "boosts": json.dumps(new_db_boosts)
             }
 
-            db_helper.createDocument('gameserver-boosts', doc)
+            db_helper.createDocument(BOOST_TABLE_NAME, doc)
         elif 'boosts' not in item or not item["boosts"]:
             db_helper.updateDocument(
-                'gameserver-boosts',
+                BOOST_TABLE_NAME,
                 {"gameserver_id": int(gameserver_id)},
                 "set boosts = :b",
                 {":b": json.dumps(new_db_boosts)}
@@ -286,7 +290,7 @@ def handler(event, context):
         elif item["boosts"]:
             combined_db_boosts = db_boosts + new_db_boosts
             db_helper.updateDocument(
-                'gameserver-boosts',
+                BOOST_TABLE_NAME,
                 {"gameserver_id": int(gameserver_id)},
                 "set boosts = :b",
                 {":b": json.dumps(combined_db_boosts)}
@@ -330,7 +334,8 @@ def boostInList(boost, db_boosts):
     return False
 
 
-def generateEmbed(gameserver_name, boost):
+def generateEmbed(gameserver_name, boost, gameserver_colors):
+
     booster = boost['username']
     boosted_at = datetime.strptime(boost['boosted_at'], "%Y-%m-%dT%H:%M:%S")
 
@@ -346,8 +351,10 @@ def generateEmbed(gameserver_name, boost):
     if days_boosted >= 2:
         day_text = 'days'
 
+    color = getGameserverColor(gameserver_name, gameserver_colors)
+
     embed = discord.Embed(title=f'{gameserver_name} BOOSTED!',
-                          colour=discord.Colour(0x4a90e2),
+                          colour=discord.Colour(color),
                           description=f'{gameserver_name} has been boosted by **{booster}** for **{days_boosted} {day_text}**!\n\n')
     embed.set_footer(text="Boosted",
                      icon_url="https://cdn.discordapp.com/icons/626094990984216586/ceb7d3a814435bc9601276d07f44b9f3.png?size=128")
@@ -360,7 +367,24 @@ def generateEmbed(gameserver_name, boost):
     return embed
 
 
+def getGameserverColor(gameserver_name, gameserver_colors):
+    default_color = "0x4a90e2"
+
+    if not gameserver_colors:
+        return int(default_color, base=16)
+
+    color_string = ""
+    if gameserver_name in gameserver_colors:
+        color_string = gameserver_colors[gameserver_name]
+
+    if not color_string:
+        return int(default_color, base=16)
+
+    hex_int = int(color_string, base=16)
+
+    return hex_int
+
 # FOR TESTING
-#handler(None, None)
-#handler('initial-connection', None)
-#handler('slow-mode', None)
+# handler(None, None)
+# handler('initial-connection', None)
+# handler('slow-mode', None)
