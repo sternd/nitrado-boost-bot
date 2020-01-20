@@ -16,16 +16,17 @@ def make_regex(string, extra_flags=0):
 
 
 _newline = make_regex(r"(\r\n|\n|\r)")
-_whitespace = make_regex(r"\s*", extra_flags=re.MULTILINE)
+_multiline_whitespace = make_regex(r"\s*", extra_flags=re.MULTILINE)
+_whitespace = make_regex(r"[^\S\r\n]*")
 _export = make_regex(r"(?:export[^\S\r\n]+)?")
 _single_quoted_key = make_regex(r"'([^']+)'")
 _unquoted_key = make_regex(r"([^=\#\s]+)")
-_equal_sign = make_regex(r"([^\S\r\n]*=[^\S\r\n]*)?")
+_equal_sign = make_regex(r"(=[^\S\r\n]*)")
 _single_quoted_value = make_regex(r"'((?:\\'|[^'])*)'")
 _double_quoted_value = make_regex(r'"((?:\\"|[^"])*)"')
 _unquoted_value_part = make_regex(r"([^ \r\n]*)")
-_comment = make_regex(r"(?:\s*#[^\r\n]*)?")
-_end_of_line = make_regex(r"[^\S\r\n]*(?:\r\n|\n|\r)?")
+_comment = make_regex(r"(?:[^\S\r\n]*#[^\r\n]*)?")
+_end_of_line = make_regex(r"[^\S\r\n]*(?:\r\n|\n|\r|$)")
 _rest_of_line = make_regex(r"[^\r\n]*(?:\r|\n|\r\n)?")
 _double_quote_escapes = make_regex(r"\\[\\'\"abfnrtv]")
 _single_quote_escapes = make_regex(r"\\[\\']")
@@ -51,6 +52,7 @@ try:
             ("key", typing.Optional[typing.Text]),
             ("value", typing.Optional[typing.Text]),
             ("original", Original),
+            ("error", bool),
         ],
     )
 except ImportError:
@@ -68,6 +70,7 @@ except ImportError:
             "key",
             "value",
             "original",
+            "error",
         ],
     )
 
@@ -151,9 +154,11 @@ def decode_escapes(regex, string):
 
 
 def parse_key(reader):
-    # type: (Reader) -> Text
+    # type: (Reader) -> Optional[Text]
     char = reader.peek(1)
-    if char == "'":
+    if char == "#":
+        return None
+    elif char == "'":
         (key,) = reader.read_regex(_single_quoted_key)
     else:
         (key,) = reader.read_regex(_unquoted_key)
@@ -191,17 +196,22 @@ def parse_binding(reader):
     # type: (Reader) -> Binding
     reader.set_mark()
     try:
-        reader.read_regex(_whitespace)
+        reader.read_regex(_multiline_whitespace)
         reader.read_regex(_export)
         key = parse_key(reader)
-        (sign,) = reader.read_regex(_equal_sign)
-        value = parse_value(reader) if sign else None
+        reader.read_regex(_whitespace)
+        if reader.peek(1) == "=":
+            reader.read_regex(_equal_sign)
+            value = parse_value(reader)  # type: Optional[Text]
+        else:
+            value = None
         reader.read_regex(_comment)
         reader.read_regex(_end_of_line)
         return Binding(
             key=key,
             value=value,
             original=reader.get_marked(),
+            error=False,
         )
     except Error:
         reader.read_regex(_rest_of_line)
@@ -209,6 +219,7 @@ def parse_binding(reader):
             key=None,
             value=None,
             original=reader.get_marked(),
+            error=True,
         )
 
 
