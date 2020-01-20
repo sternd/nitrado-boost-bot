@@ -352,12 +352,13 @@ def generateEmbed(gameserver_name, boost, gameserver_colors):
         day_text = 'days'
 
     color = getGameserverColor(gameserver_name, gameserver_colors)
+    server_icon = os.getenv('SERVER_ICON')
 
     embed = discord.Embed(title=f'{gameserver_name} BOOSTED!',
                           colour=discord.Colour(color),
                           description=f'{gameserver_name} has been boosted by **{booster}** for **{days_boosted} {day_text}**!\n\n')
     embed.set_footer(text="Boosted",
-                     icon_url="https://cdn.discordapp.com/icons/626094990984216586/9765ecafe6ecff59a326302144485449.png?size=128")
+                     icon_url=server_icon)
 
     if boost_message:
         embed.add_field(name='Boost Message', value=boost_message, inline=True)
