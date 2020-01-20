@@ -124,7 +124,7 @@ class DiscordHelper:
         async def on_ready():
             print('Closing connection')
             await client.close()
-            exit()
+            return None
 
         client.run(self.TOKEN)
 
@@ -201,7 +201,9 @@ def handler(event, context):
 
     if event == "initial-connection":
         discord_helper.intialConnection()
-        exit()
+        return {
+            'message': "Successfully initialized connection"
+        }
 
     with open('nitrapi_account_config.json') as json_file:
         nitrapi_account_config = json.load(json_file)
@@ -294,7 +296,9 @@ def handler(event, context):
 
         if event == "slow-mode":
             print('Exiting for slow mode')
-            exit()
+            return {
+                'message': "Success in slow mode"
+            }
 
     return {
         'message': "Success",
