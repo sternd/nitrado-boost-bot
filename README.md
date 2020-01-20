@@ -34,6 +34,7 @@ zip -r9 ${OLDPWD}/nitrado-boost-bot.zip .
 cd ..
 zip -g nitrado-boost-bot.zip bot.py
 zip -g nitrado-boost-bot.zip nitrapi_account_config.json
+zip -g nitrado-boost-bot.zip gameserver_colors.json
 aws lambda update-function-code --function-name nitrado-boost-bot --zip-file fileb://nitrado-boost-bot.zip
 ```
 
