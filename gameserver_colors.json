@@ -1,10 +1,12 @@
 {
   "Ragnarok": "0xf1c40f",
-  "PvP": "0xff0000",
+  "Valguero PvP": "0xff0000",
   "Aberration": "0x3399ff",
   "Valguero": "0x00ff00",
   "Extinction": "0xad1818",
   "Scorched Earth": "0xff5c00",
   "The Island": "0xfefefe",
-  "Genesis": "0x00bfff"
+  "Genesis": "0x00bfff",
+  "Ragnarok Prim+": "0xf1c40f",
+  "The Center": "0xa9a9a9"
 }
