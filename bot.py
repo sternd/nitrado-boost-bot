@@ -1,6 +1,6 @@
 # bot.py
 import os
-
+import time
 import discord
 from dotenv import load_dotenv
 import requests
@@ -261,6 +261,9 @@ def handler(event, context):
         for boost in new_gameserver_boosts:
             embed = generateEmbed(gameserver_name, boost, gameserver_colors)
             dict_embed = embed.to_dict()
+
+            if event == "slow-mode":
+                time.sleep(5)
 
             response = discord_helper.createMessage(dict_embed)
             total_new_boosts += 1
